@@ -1383,14 +1383,14 @@
                 101: "صاحب الفيديو قافل تشغيله برا يوتيوب (Embedding)",
                 150: "صاحب الفيديو قافل تشغيله برا يوتيوب (Embedding)",
               };
-              const msg =
-                (songs[curSong] && songs[curSong].name
-                  ? "أغنية «" + songs[curSong].name + "»: "
-                  : "") + (reasons[e.data] || "مشكلة غير معروفة");
-              console.warn("YouTube error:", e.data, msg);
-              alert("⚠️ " + msg + "\nجرّب لينك يوتيوب تاني ليها.");
-              setPlaying(false);
-              stopYtProgress();
+              // const msg =
+              //   (songs[curSong] && songs[curSong].name
+              //     ? "أغنية «" + songs[curSong].name + "»: "
+              //     : "") + (reasons[e.data] || "مشكلة غير معروفة");
+              // console.warn("YouTube error:", e.data, msg);
+              // alert("⚠️ " + msg + "\nجرّب لينك يوتيوب تاني ليها.");
+              // setPlaying(false);
+              // stopYtProgress();
             },
           },
         });
