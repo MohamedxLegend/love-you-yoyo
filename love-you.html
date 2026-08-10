@@ -1278,17 +1278,8 @@
     <script type="application/json" id="songStarts">
       [5, 0]
     </script>
-
-    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-      /* ===== SONGS من الأدمن ===== */
-      function getYouTubeId(url) {
-        if (!url) return null;
-        const m = String(url).match(
-          /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-        );
-        return m ? m[1] : null;
-      }
+
 
       const songs = (function () {
         try {
@@ -1298,26 +1289,19 @@
           const names = JSON.parse(
             document.getElementById("songNames").textContent || "[]",
           );
-          const startsEl = document.getElementById("songStarts");
+		            const startsEl = document.getElementById("songStarts");
           const starts = startsEl
             ? JSON.parse(startsEl.textContent || "[]")
             : [];
           if (!urls || urls.length === 0) return [];
-          return urls.map((src, i) => {
-            const ytId = getYouTubeId(src);
-            return {
-              src: src,
-              type: ytId ? "youtube" : "audio",
-              ytId: ytId,
-              name: names[i] || "🎵 أغنية " + (i + 1),
-              start: Number(starts[i]) || 0,
-            };
-          });
+          return urls.map((src, i) => ({
+            src: src,
+            name: names[i] || "🎵 أغنية " + (i + 1),
+          }));
         } catch (e) {
           return [];
         }
       })();
-
       /* ===== COUNTDOWN — التاريخ من الأدمن ===== */
       const startDate = new Date("2026-04-26T03:09:00").getTime();
 
