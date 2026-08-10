@@ -1249,7 +1249,9 @@
         "\u062d\u0628\u0643 \u0643\u0644 \u064a\u0648\u0645 \u0628\u064a\u0630\u064a\u062f\u2764"
       ]
     </script>
-
+    <script type="application/json" id="songStarts">
+      [5, 0]
+    </script>
     <script>
       /* ===== SONGS من الأدمن ===== */
       const songs = (function () {
@@ -1260,6 +1262,10 @@
           const names = JSON.parse(
             document.getElementById("songNames").textContent || "[]",
           );
+                    const startsEl = document.getElementById("songStarts");
+          const starts = startsEl
+            ? JSON.parse(startsEl.textContent || "[]")
+            : [];
           if (!urls || urls.length === 0) return [];
           return urls.map((src, i) => ({
             src: src,
