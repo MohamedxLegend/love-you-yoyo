@@ -1232,36 +1232,10 @@
           </div>
         </div>
       </div>
-      <audio id="loveSong"></audio>
-      <!-- بلاير يوتيوب مخفي (بيشتغل صوت بس، مفيش فيديو ظاهر للمستخدم) -->
-      <div
-        id="ytPlayerBox"
-        style="
-          position: fixed;
-          bottom: 0;
-          right: 0;
-          width: 2px;
-          height: 2px;
-          opacity: 0.01;
-          pointer-events: none;
-          overflow: hidden;
-          z-index: -1;
-        "
-      >
-        <div id="ytPlayer"></div>
-      </div>
+      <audio autoplay id="loveSong"></audio>
     </div>
 
     <!-- بيانات الأغاني -->
-    <!--
-      لكل أغنية 3 حاجات بنفس الترتيب:
-      1) songUrls  : لينك الأغنية. ممكن يكون لينك ملف صوت/فيديو عادي (زي Cloudinary)
-                     أو لينك يوتيوب عادي (youtube.com/watch?v=... أو youtu.be/...)
-      2) songNames : اسم الأغنية اللي هيظهر للمستخدم
-      3) songStarts: الثانية اللي الأغنية تبدأ منها فعليًا جوه الملف (رقم بالثواني).
-                     العداد اللي المستخدم شايفه هيفضل يبدأ من 0:00 عادي حتى لو الأغنية فعليًا بادئة من نص الملف.
-                     سيب الرقم 0 لو عايزها تشتغل من الأول عادي.
-    -->
     <script type="application/json" id="songUrls">
       [
         "https://res.cloudinary.com/dvc3zpg1i/video/upload/v1774629783/clients/emtztvai68qiwimbuzal.mp4",
@@ -1275,12 +1249,9 @@
         "\u062d\u0628\u0643 \u0643\u0644 \u064a\u0648\u0645 \u0628\u064a\u0630\u064a\u062f\u2764"
       ]
     </script>
-    <script type="application/json" id="songStarts">
-      [5, 0]
-    </script>
+
     <script>
-
-
+      /* ===== SONGS من الأدمن ===== */
       const songs = (function () {
         try {
           const urls = JSON.parse(
@@ -1289,10 +1260,6 @@
           const names = JSON.parse(
             document.getElementById("songNames").textContent || "[]",
           );
-		            const startsEl = document.getElementById("songStarts");
-          const starts = startsEl
-            ? JSON.parse(startsEl.textContent || "[]")
-            : [];
           if (!urls || urls.length === 0) return [];
           return urls.map((src, i) => ({
             src: src,
@@ -1302,6 +1269,7 @@
           return [];
         }
       })();
+
       /* ===== COUNTDOWN — التاريخ من الأدمن ===== */
       const startDate = new Date("2026-04-26T03:09:00").getTime();
 
@@ -1320,152 +1288,21 @@
         );
       }
 
-      /* ===== يوتيوب (بلاير مخفي) ===== */
-      let ytPlayer = null;
-      let ytReady = false;
-      let ytPendingIdx = null; // {idx, autoplay} لحد ما اليوتيوب يبقى جاهز
-      let ytProgressTimer = null;
-      let ytPlayerActive = false; // هل آخر أغنية شغالة دلوقتي هي يوتيوب
-
-      function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player("ytPlayer", {
-          height: "2",
-          width: "2",
-          playerVars: { controls: 0, disablekb: 1, playsinline: 1, rel: 0 },
-          events: {
-            onReady: function () {
-              ytReady = true;
-              if (ytPendingIdx !== null) {
-                const p = ytPendingIdx;
-                ytPendingIdx = null;
-                playYouTubeSong(p.idx, p.autoplay);
-              }
-            },
-            onStateChange: function (e) {
-              if (e.data === YT.PlayerState.ENDED) {
-                stopYtProgress();
-                nextSong();
-              } else if (e.data === YT.PlayerState.PLAYING) {
-                setPlaying(true);
-                updateYtTimeOnce();
-                startYtProgress();
-              } else if (
-                e.data === YT.PlayerState.PAUSED ||
-                e.data === YT.PlayerState.CUED
-              ) {
-                setPlaying(false);
-                stopYtProgress();
-                updateYtTimeOnce();
-              }
-            },
-            onError: function (e) {
-              // 2 / 5 = لينك غلط أو فيديو محذوف — 100 / 101 / 150 = صاحب الفيديو قافل التضمين برا يوتيوب
-              const reasons = {
-                2: "لينك اليوتيوب غلط",
-                5: "في مشكلة في تشغيل الفيديو ده",
-                100: "الفيديو ده محذوف أو خاص",
-                101: "صاحب الفيديو قافل تشغيله برا يوتيوب (Embedding)",
-                150: "صاحب الفيديو قافل تشغيله برا يوتيوب (Embedding)",
-              };
-              // const msg =
-              //   (songs[curSong] && songs[curSong].name
-              //     ? "أغنية «" + songs[curSong].name + "»: "
-              //     : "") + (reasons[e.data] || "مشكلة غير معروفة");
-              // console.warn("YouTube error:", e.data, msg);
-              // alert("⚠️ " + msg + "\nجرّب لينك يوتيوب تاني ليها.");
-              // setPlaying(false);
-              // stopYtProgress();
-            },
-          },
-        });
-      }
-
-      function playYouTubeSong(idx, autoplay) {
-        if (!ytReady) {
-          ytPendingIdx = { idx: idx, autoplay: autoplay };
-          setTimeout(() => {
-            if (!ytReady) {
-              alert(
-                "⚠️ مشغل يوتيوب متفتحش.\n\n" +
-                  "السبب الأغلب: الصفحة متفتحة كملف من على الجهاز مباشرة (file:///...) مش من سيرفر.\n" +
-                  "يوتيوب مبيشتغلش خالص بالطريقة دي.\n\n" +
-                  "الحل: افتح الصفحة عن طريق Live Server (في VS Code) أو ارفعها على استضافة وافتحها بلينك http:// أو https://.",
-              );
-            }
-          }, 4000);
-          return;
-        }
-        const song = songs[idx];
-        if (autoplay) {
-          ytPlayer.loadVideoById({
-            videoId: song.ytId,
-            startSeconds: song.start || 0,
-          });
-        } else {
-          ytPlayer.cueVideoById({
-            videoId: song.ytId,
-            startSeconds: song.start || 0,
-          });
-        }
-      }
-
-      function updateYtTimeOnce() {
-        if (!ytPlayer || !ytPlayer.getDuration) return;
-        const song = songs[curSong];
-        const start = (song && song.start) || 0;
-        const dur = ytPlayer.getDuration();
-        const cur = ytPlayer.getCurrentTime();
-        if (!dur) return;
-        const effDur = Math.max(dur - start, 0.001);
-        const effCur = Math.max(cur - start, 0);
-        fillEl.style.width = Math.min((effCur / effDur) * 100, 100) + "%";
-        curTEl.textContent = fmt(effCur);
-        totTEl.textContent = fmt(Math.max(dur - start, 0));
-      }
-
-      function startYtProgress() {
-        stopYtProgress();
-        ytProgressTimer = setInterval(updateYtTimeOnce, 400);
-      }
-      function stopYtProgress() {
-        if (ytProgressTimer) clearInterval(ytProgressTimer);
-        ytProgressTimer = null;
-      }
-
-      /* ===== تحميل أغنية (صوت عادي أو يوتيوب) ===== */
       function loadSong(idx, autoplay) {
         curSong = (idx + songs.length) % songs.length;
-        const song = songs[curSong];
-        if (!song || !song.src) return;
-
-        document.getElementById("songName").textContent = song.name;
+        if (!songs[curSong].src) return;
+        audio.src = songs[curSong].src;
+        document.getElementById("songName").textContent = songs[curSong].name;
         document.getElementById("songNum").textContent =
           curSong + 1 + " / " + songs.length;
         fillEl.style.width = "0%";
         curTEl.textContent = "0:00";
         totTEl.textContent = "0:00";
-        stopYtProgress();
-
-        if (song.type === "youtube") {
-          ytPlayerActive = true;
-          audio.pause();
-          audio.removeAttribute("src");
-          playYouTubeSong(curSong, autoplay);
-          if (!autoplay) setPlaying(false);
+        if (autoplay) {
+          audio.play();
+          setPlaying(true);
         } else {
-          ytPlayerActive = false;
-          if (ytPlayer && ytReady) ytPlayer.stopVideo();
-          audio.src = song.src;
-          audio.addEventListener("loadedmetadata", function seekOnce() {
-            audio.currentTime = Math.min(song.start || 0, audio.duration || 0);
-            audio.removeEventListener("loadedmetadata", seekOnce);
-          });
-          if (autoplay) {
-            audio.play();
-            setPlaying(true);
-          } else {
-            setPlaying(false);
-          }
+          setPlaying(false);
         }
       }
 
@@ -1476,57 +1313,30 @@
       }
 
       function toggleMusic() {
-        if (!songs.length) return;
-        const song = songs[curSong];
-        if (!song) {
-          loadSong(0, true);
-          return;
-        }
-        if (song.type === "youtube") {
-          if (!ytReady) {
-            playYouTubeSong(curSong, true);
-            return;
-          }
-          if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-            ytPlayer.pauseVideo();
-          } else {
-            ytPlayer.playVideo();
-          }
+        if (!audio.src && songs.length) loadSong(0, true);
+        else if (audio.paused) {
+          audio.play();
+          setPlaying(true);
         } else {
-          if (!audio.src) {
-            loadSong(0, true);
-            return;
-          }
-          if (audio.paused) {
-            audio.play();
-            setPlaying(true);
-          } else {
-            audio.pause();
-            setPlaying(false);
-          }
+          audio.pause();
+          setPlaying(false);
         }
       }
 
       function prevSong() {
-        loadSong(curSong - 1, ytPlayerActive ? true : !audio.paused);
+        loadSong(curSong - 1, !audio.paused);
       }
       function nextSong() {
-        loadSong(curSong + 1, ytPlayerActive ? true : !audio.paused);
+        loadSong(curSong + 1, !audio.paused);
       }
 
       audio.addEventListener("timeupdate", () => {
         if (!audio.duration) return;
-        const song = songs[curSong];
-        const start = (song && song.start) || 0;
-        const effDur = Math.max(audio.duration - start, 0.001);
-        const effCur = Math.max(audio.currentTime - start, 0);
-        fillEl.style.width = Math.min((effCur / effDur) * 100, 100) + "%";
-        curTEl.textContent = fmt(effCur);
+        fillEl.style.width = (audio.currentTime / audio.duration) * 100 + "%";
+        curTEl.textContent = fmt(audio.currentTime);
       });
       audio.addEventListener("loadedmetadata", () => {
-        const song = songs[curSong];
-        const start = (song && song.start) || 0;
-        totTEl.textContent = fmt(Math.max(audio.duration - start, 0));
+        totTEl.textContent = fmt(audio.duration);
       });
       audio.addEventListener("ended", () => {
         nextSong();
@@ -1618,22 +1428,8 @@
       /* ===== SEEK ===== */
       function seekMusic(e) {
         const bar = document.getElementById("progressBar");
-        const ratio = Math.min(Math.max(e.offsetX / bar.offsetWidth, 0), 1);
-        const song = songs[curSong];
-        if (!song) return;
-        const start = song.start || 0;
-
-        if (song.type === "youtube") {
-          if (!ytReady || !ytPlayer.getDuration) return;
-          const dur = ytPlayer.getDuration();
-          if (!dur) return;
-          const effDur = dur - start;
-          ytPlayer.seekTo(start + ratio * effDur, true);
-        } else {
-          if (!audio.duration) return;
-          const effDur = audio.duration - start;
-          audio.currentTime = start + ratio * effDur;
-        }
+        if (audio.duration)
+          audio.currentTime = (e.offsetX / bar.offsetWidth) * audio.duration;
       }
 
       /* ===== TAP CARD ===== */
@@ -1674,23 +1470,6 @@
       });
 
       /* ===== EVENT LISTENERS ===== */
-      // شغّل أول أغنية تلقائي مع أول تفاعل من المستخدم في أي حتة بالصفحة
-      // (المتصفح مبيسمحش بتشغيل صوت تلقائي غير بعد أول تفاعل حقيقي من المستخدم)
-      let firstSongStarted = false;
-      function startFirstSongOnce() {
-        if (firstSongStarted) return;
-        firstSongStarted = true;
-        if (songs.length && songs[0].src) {
-          loadSong(0, true);
-        }
-      }
-      ["click", "touchstart", "keydown"].forEach((evt) => {
-        document.addEventListener(evt, startFirstSongOnce, {
-          once: true,
-          capture: true,
-        });
-      });
-
       document.getElementById("startBtn").addEventListener("click", goToPage2);
       document
         .getElementById("toPage3Btn")
